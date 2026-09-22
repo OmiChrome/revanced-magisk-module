@@ -59,6 +59,20 @@ jobs:
           cat build.md >> "$GITHUB_OUTPUT"
           echo "${DELIM}" >> "$GITHUB_OUTPUT"
           cp -f build.md build.tmp
+      
+      - name: Upload release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
+          BODY: ${{ steps.get_output.outputs.BUILD_LOG }}
+        run: |
+          ls -lh ./build/*
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "Release" --notes "$BODY"
+            gh release upload "$TAG" ./build/* --clobber
+          else
+            gh release create "$TAG" ./build/* --title "Release" --notes "$BODY"
+          fi
 
       - name: Upload modules to release
         uses: svenstaro/upload-release-action@v2
